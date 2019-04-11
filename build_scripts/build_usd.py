@@ -265,21 +265,22 @@ def RunCMake(context, force, extraArgs = None):
         osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
 
     with CurrentWorkingDirectory(buildDir):
-        Run('cmake '
+        Run('{cmake} '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
             '{osx_rpath} '
             '{generator} '
             '{extraArgs} '
             '"{srcDir}"'
-            .format(instDir=instDir,
+            .format(cmake=context.cmake,
+                    instDir=instDir,
                     depsInstDir=context.instDir,
                     srcDir=srcDir,
                     osx_rpath=(osx_rpath or ""),
                     generator=(generator or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config Release --target install -- {multiproc}"
-            .format(multiproc=("/M:{procs}" if Windows() else "-j{procs}")
+        Run("{cmake} --build . --config Release --target install -- {multiproc}"
+            .format(cmake=context.cmake, multiproc=("/M:{procs}" if Windows() else "-j{procs}")
                                .format(procs=context.numJobs)))
 
 def PatchFile(filename, patches):
@@ -1378,6 +1379,12 @@ class InstallContext:
             self.downloader = DownloadFileWithUrllib
             self.downloaderName = "built-in"
 
+        if find_executable(args.cmake):
+            self.cmake = args.cmake
+        else:
+            raise ValueError("CMake not found -- please install it and adjust your PATH "
+                    "or provide it with --cmake arg")
+
         # CMake generator
         self.cmakeGenerator = args.generator
 
@@ -1581,11 +1588,6 @@ if not find_executable("python"):
                "PATH")
     sys.exit(1)
 
-if not find_executable(args.cmake):
-    PrintError("CMake not found -- please install it and adjust your PATH "
-               "or provide it with --cmake arg")
-    sys.exit(1)
-
 if context.buildDocs:
     if not find_executable("doxygen"):
         PrintError("doxygen not found -- please install it and adjust your PATH")
@@ -1625,6 +1627,7 @@ Building with settings:
   3rd-party source directory    {srcDir}
   3rd-party install directory   {instDir}
   Build directory               {buildDir}
+  CMake executable              {cmakeExecutable}
   CMake generator               {cmakeGenerator}
   Downloader                    {downloader}
 
@@ -1667,6 +1670,7 @@ summaryMsg = summaryMsg.format(
     srcDir=context.srcDir,
     buildDir=context.buildDir,
     instDir=context.instDir,
+    cmakeExecutable="",
     cmakeGenerator=("Default" if not context.cmakeGenerator
                     else context.cmakeGenerator),
     downloader=(context.downloaderName),
