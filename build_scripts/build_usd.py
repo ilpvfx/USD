@@ -387,14 +387,16 @@ def DownloadURL(url, context, force, dontExtract = None):
         try:
             if tarfile.is_tarfile(filename):
                 archive = tarfile.open(filename)
-                rootDir = archive.getnames()[0].split('/')[0]
+                # Getting the last part is as good as taking the first, right?
+                rootDir = archive.getnames()[-1].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getmembers() 
                                if not any((fnmatch.fnmatch(m.name, p)
                                            for p in dontExtract)))
             elif zipfile.is_zipfile(filename):
                 archive = zipfile.ZipFile(filename)
-                rootDir = archive.namelist()[0].split('/')[0]
+                # Getting the last part is as good as taking the first, right?
+                rootDir = archive.namelist()[-1].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getnames() 
                                if not any((fnmatch.fnmatch(m, p)
@@ -486,14 +488,8 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
-if Linux():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.gz"
-    BOOST_VERSION_FILE = "include/boost/version.hpp"
-elif MacOS():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
-    BOOST_VERSION_FILE = "include/boost/version.hpp"
-elif Windows():
-    BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.61.0/boost_1_61_0.tar.gz"
+BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.66.0/boost_1_66_0.tar.gz"
+if Windows():
     # The default installation of boost on Windows puts headers in a versioned 
     # subdirectory, which we have to account for here. In theory, specifying 
     # "layout=system" would make the Windows install match Linux/MacOS, but that 
@@ -504,6 +500,9 @@ elif Windows():
     if IsVisualStudio2017OrGreater():
         BOOST_URL = "https://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_65_1/boost/version.hpp"
+
+else:
+    BOOST_VERSION_FILE = "include/boost/version.hpp"
 
 def InstallBoost(context, force, buildArgs):
     # Documentation files in the boost archive can have exceptionally
@@ -579,13 +578,15 @@ if Windows():
 elif MacOS():
     TBB_URL = "https://github.com/01org/tbb/archive/2017_U2.tar.gz"
 else:
-    TBB_URL = "https://github.com/01org/tbb/archive/4.4.6.tar.gz"
+    TBB_URL = "https://github.com/01org/tbb/releases/download/2018_U6/tbb2018_20180822oss_lin.tgz"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
         InstallTBB_Windows(context, force, buildArgs)
-    elif Linux() or MacOS():
-        InstallTBB_LinuxOrMacOS(context, force, buildArgs)
+    elif Linux():
+        InstallTBB_Linux(context, force, buildArgs)
+    elif MacOS():
+        InstallTBB_MacOS(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
@@ -602,7 +603,7 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyDirectory(context, "include\\serial", "include\\serial")
         CopyDirectory(context, "include\\tbb", "include\\tbb")
 
-def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
+def InstallTBB_MacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
         # TBB does not support out-of-source builds in a custom location.
         Run('make -j{procs} {buildArgs}'
@@ -610,6 +611,18 @@ def InstallTBB_LinuxOrMacOS(context, force, buildArgs):
                     buildArgs=" ".join(buildArgs)))
 
         CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+        CopyDirectory(context, "include/serial", "include/serial")
+        CopyDirectory(context, "include/tbb", "include/tbb")
+
+def InstallTBB_Linux(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
+        # On Linux, we simply copy headers and pre-built SOs to
+        # the appropriate location.
+        if buildArgs:
+            PrintWarning("Ignoring build arguments {}, TBB is "
+                         "not built from source on this platform."
+                         .format(buildArgs))
+        CopyFiles(context, "lib/intel64/gcc4.7/libtbb*.*", "lib")
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
