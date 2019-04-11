@@ -1195,6 +1195,9 @@ group.add_argument("--force", type=str, action="append", dest="force_build",
                          "(see docs above)"))
 group.add_argument("--force-all", action="store_true",
                    help="Force download and build of all libraries")
+group.add_argument("--cmake", type=str, 
+                   default="cmake",
+                   help=("CMake executable to use (default: cmake)"))
 group.add_argument("--generator", type=str,
                    help=("CMake generator to use when building libraries with "
                          "cmake"))
@@ -1578,8 +1581,9 @@ if not find_executable("python"):
                "PATH")
     sys.exit(1)
 
-if not find_executable("cmake"):
-    PrintError("CMake not found -- please install it and adjust your PATH")
+if not find_executable(args.cmake):
+    PrintError("CMake not found -- please install it and adjust your PATH "
+               "or provide it with --cmake arg")
     sys.exit(1)
 
 if context.buildDocs:
