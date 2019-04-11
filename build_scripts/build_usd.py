@@ -823,9 +823,9 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-# Note that we use v1.1.0 instead of the minimum required v1.0.9
+# Note that we use v1.1.1 instead of the minimum required v1.0.9
 # because v1.0.9 has problems building on macOS and Windows.
-OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.1.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
