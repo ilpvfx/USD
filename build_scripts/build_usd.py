@@ -396,7 +396,7 @@ def DownloadURL(url, context, force, dontExtract = None):
             elif zipfile.is_zipfile(filename):
                 archive = zipfile.ZipFile(filename)
                 # Getting the last part is as good as taking the first, right?
-                rootDir = archive.namelist()[-1].split('/')[0]
+                rootDir = archive.namelist()[0].split('/')[0]
                 if dontExtract != None:
                     members = (m for m in archive.getnames() 
                                if not any((fnmatch.fnmatch(m, p)
